@@ -1,0 +1,76 @@
+/**
+* @author: Roger Rosset
+* @description: Upload custom metadata records using CSV/JSON
+*/
+
+public class mdtImport  {    
+    public static void insertMetadataRecords(String metaDataTypeName, String jsonString){
+        try{
+            Integer count = 1;
+            Metadata.DeployContainer mdContainer = new Metadata.DeployContainer();
+            JSONCsvTemplate csv = (JSONCsvTemplate)JSON.deserialize(jsonStringMdt(jsonString), JSONCsvTemplate.class);
+            for(JSONCsvTemplate.mdtRecords item : csv.data.mdtRecordsList){
+            //Sets the custom metadata type you'll insert your records on
+            
+            //If you're using namespaces on your org set it here
+            String nameSpacePrefix ='';                                     
+            Metadata.CustomMetadata rec =  new Metadata.CustomMetadata();
+            String label = 'Record '+count;                      
+            rec.fullName = nameSpacePrefix+metaDataTypeName+'.'+label;
+            rec.label = label; 
+            
+            //Sets the custom metadata custom fields to be inserted
+            /*
+            * Use the template below to setup any fields you want to:
+            *    
+            Metadata.CustomMetadataValue fieldX = new Metadata.CustomMetadataValue();     //New instance
+            fieldX.field = 'Custom_Field_Name__c';              //Custom Metadata Field you want to fill
+            field1.value = item.JSON_Matching_Key_Value;        //The matching key value on the wrapper
+            rec.values.add(fieldX);                             //adds the value and the matching field
+            *
+            */
+            
+            Metadata.CustomMetadataValue field1 = new Metadata.CustomMetadataValue();
+            field1.field = 'SubGroup__c';
+            field1.value = item.SubGroup;
+            rec.values.add(field1);            
+            Metadata.CustomMetadataValue field2 = new Metadata.CustomMetadataValue();
+            field2.field = 'Description__c';
+            field2.value = item.Description;
+            rec.values.add(field2);                       
+            Metadata.CustomMetadataValue field3 = new Metadata.CustomMetadataValue();
+            field3.field = 'keyId__c';
+            field3.value = item.keyId;
+            rec.values.add(field3);                        
+            mdContainer.addMetadata(rec);  
+            count++;
+    } 
+            Id jobId = Metadata.Operations.enqueueDeployment(mdContainer, null);
+            system.debug('Container>>'+mdContainer);
+            system.debug('Id>>'+jobId);
+            return;
+        }
+        
+         	catch(Exception ex){             
+            system.debug('Error on insert');
+            system.debug('Error:'+ex.getMessage());
+        }
+
+    }
+    private static String jsonStringMdt(String jsonString){
+        String resultJson = '{"data":{"mdtRecordsList":'+jsonString+'}}';
+        return resultJson;
+    }
+
+    private class JSONCsvTemplate{
+        private class Data{
+            private List<mdtRecords> mdtRecordsList;
+    }
+        private class mdtRecords{
+            private String keyId;
+            private String SubGroup;
+            private String Description;
+        }
+        private Data data;
+    }
+}
